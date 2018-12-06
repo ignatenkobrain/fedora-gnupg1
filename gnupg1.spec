@@ -3,7 +3,6 @@ Name: gnupg1
 Version: 1.4.23
 Release: 3%{?dist}
 License: GPLv3+ with exceptions
-Group: Applications/System
 URL: http://www.gnupg.org/
 Source0: https://gnupg.org/ftp/gcrypt/gnupg/gnupg-%{version}.tar.bz2
 Source1: https://gnupg.org/ftp/gcrypt/gnupg/gnupg-%{version}.tar.bz2.sig
@@ -14,7 +13,7 @@ Patch0001: 0001-Rename-package-to-gnupg1-1656282.patch
 BuildRequires: gcc
 # Requires autoconf >= 2.60 because earlier autoconf didn't define $localedir.
 BuildRequires: autoconf >= 2.60
-BuildRequires: git
+BuildRequires: git-core
 BuildRequires: automake, bzip2-devel, expect, ncurses-devel
 BuildRequires: openldap-devel, readline-devel, zlib-devel, gettext-devel
 BuildRequires: curl-devel
@@ -23,7 +22,6 @@ BuildRequires: libusb-devel
 %endif
 # pgp-tools, perl-GnuPG-Interface include 'Requires: gpg' -- Rex
 Provides: gpg1 = %{version}-%{release}
-Requires(post): /sbin/install-info
 
 %description
 GnuPG (GNU Privacy Guard) is a GNU utility for encrypting data and
@@ -56,17 +54,16 @@ LDFLAGS="$RPM_OPT_FLAGS -pie -Wl,-z,relro,-z,now" ; export LDFLAGS
     --disable-rpath \
     --with-zlib --enable-noexecstack \
     $configure_flags
-make %{?_smp_mflags}
+%make_build
 env LANG=C expect -f %{SOURCE2}
 
 %check
 make check
 
 %install
-rm -rf %{buildroot}
-make install DESTDIR=%{buildroot}
+%make_install
 sed 's^\.\./g[0-9\.]*/^^g' tools/lspgpot > lspgpot
-install -m755 lspgpot %{buildroot}%{_bindir}/lspgpot
+install -pm755 lspgpot %{buildroot}%{_bindir}/lspgpot
 rm -f %{buildroot}/%{_infodir}/dir
 
 # Rename the binaries
@@ -80,28 +77,9 @@ for f in gpg gpgv gpg-zip; do
 done
 %find_lang %{name}
 
-%post
-if test -s %{_infodir}/gnupg1.info.gz ; then
-    /sbin/install-info %{_infodir}/gnupg1.info.gz %{_infodir}/dir 2> /dev/null
-fi
-if ! test -s %{_infodir}/gpg.info.gz ; then
-    /sbin/install-info --delete %{_infodir}/gpg.info.gz %{_infodir}/dir 2> /dev/null
-fi
-if ! test -s %{_infodir}/gpgv.info.gz ; then
-    /sbin/install-info --delete %{_infodir}/gpgv.info.gz %{_infodir}/dir 2> /dev/null
-fi
-exit 0
-
-%preun
-if [ $1 = 0 ]; then
-    if test -s %{_infodir}/gnupg1.info.gz ; then
-        /sbin/install-info --delete %{_infodir}/gnupg1.info.gz %{_infodir}/dir 2> /dev/null
-    fi
-fi
-exit 0
-
 %files -f %{name}.lang
-%doc AUTHORS BUGS COPYING NEWS PROJECTS README THANKS TODO
+%license COPYING
+%doc AUTHORS BUGS NEWS PROJECTS README THANKS TODO
 %doc doc/DETAILS doc/HACKING doc/OpenPGP doc/samplekeys.asc
 %{_bindir}/gpg1
 %{_bindir}/gpgv1
